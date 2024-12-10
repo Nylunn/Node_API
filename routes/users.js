@@ -1,15 +1,19 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');  // Assurez-vous d'avoir un modèle User dans votre projet
 const router = express.Router();
 
 const service = require('../services/users');
+const private = require('../middlewares/private');
 
 
-router.get('/:id', service.getById);
+router.get('/:id', private.checkJWT, service.getById);
 router.put('/add', service.add);
-router.patch('/:id', service.update);
-router.delete('/:id', service.delete);
+router.patch('/update', private.checkJWT, service.update);
+router.delete('/delete', private.checkJWT,service.delete);
 
-//router.post('/authenticate', service.authenticate);
 
+//ajout de la route authenticate
+router.post('/authenticate', service.authenticate);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+require('dotenv').config({ path: './env/.env' });
 const SECRET_KEY = process.env.SECRET_KEY;
 
 //gestion des ID
@@ -87,36 +88,38 @@ exports.delete = async (req, res, next) => {
 
 // vérif du mdp
 
-exports.authenticate = async (req, res, next) => {
+exports.authenticate = async (req, res) => {
     const { email, password } = req.body;
 
-    try {
-        let user = await User.findOne({ email: email}, '-__v -createdAt -updateAt');
+  try  {
+    let user = await User.findOne({ email: email }, '-__v -createdAt -updateAt'); 
+    if (user) {
+        bcrypt.compare(password, user.password, function(err, response) {
+            if (err) {
+                throw new Error(err);
+            }
+            if (response) {
+                delete user._doc_password;
 
-        if (user) {
-            bcrypt.compare(password, user.password, function(err, response) {
-                if (err) {
-                    throw new Error(err);
-                }
-                if (response) {
-                    delete user._doc.password;
-
-                    const expireIn = 24 * 60 * 60;
-                    const token = jwt.sign({
-                        user: user
-                    },
-                SECRET_KEY,
-                {
-                    expiresIn: expireIn
-                });
-                res.header('Authorization', 'Bearer ' + token);
-                }
-                return res.status(403).json('wrong_credentials');
-            });
-        } else {
-            return res.status(404).json('user_not_found');
+                const expireIn = 24 * 60 * 60;
+                const token = jwt.sign({
+                    user: user
+                },
+            SECRET_KEY,
+        {
+            expiresIn: expireIn
+        });
+            res.header('Authorization', 'Bearer ' + token);
+        
+            return res.status(200).json('authenticate_succeed');
         }
-    } catch (error) {
-        return res.status(501).json(error);
+
+        return res.status(403).json('wrong_credentials');
+        });
+    } else {
+        return res.status(404).json('user_not_found');
     }
+} catch (error) {
+    return res.status(501).json(error);
+}
 }
